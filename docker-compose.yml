@@ -68,6 +68,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./credentials:/usr/share/grafana/.aws/credentials
     environment:
       - GF_SECURITY_ADMIN_USER=${ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD}
@@ -104,24 +105,24 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
-  mysql:
-    image: mysql:5.6
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./log:/var/log
-    networks:
-      - monitor-net
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=monitoring
-      - MYSQL_USER=exporter
-      - MYSQL_PASSWORD=exporter
-      - MYSQL_ROOT_HOST=%
-    ports:
-      - "3306:3306"
-    labels:
-      org.label-schema.group: "mysql"
+  # mysql:
+  #   image: mysql:5.6
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #     - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #     - ./log:/var/log
+  #   networks:
+  #     - monitor-net
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+  #     - MYSQL_DATABASE=monitoring
+  #     - MYSQL_USER=exporter
+  #     - MYSQL_PASSWORD=exporter
+  #     - MYSQL_ROOT_HOST=%
+  #   ports:
+  #     - "3306:3306"
+  #   labels:
+  #     org.label-schema.group: "mysql"
 
   mysqld-exporter:
     image: prom/mysqld-exporter:main
@@ -131,9 +132,29 @@ services:
       - monitor-net
     ports:
       - "9104:9104"
+    restart: always
     environment:
-      - DATA_SOURCE_NAME=root:root@(mysql:3306)/
-    depends_on:
-      - mysql
+      - DATA_SOURCE_NAME=${DB_USER}:${DB_PASSWORD}@(${DB_HOST}:3306)/
+    # depends_on:
+    #   - mysql
     labels:
       org.label-schema.group: "mysql"
+
+  monitor:
+    build: ./monitor
+    container_name: monitor
+    volumes:
+      - ./log:/var/log
+    networks:
+      - monitor-net
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+    # depends_on:
+    #   - mysql
+    labels:
+      org.label-schema.group: "application"

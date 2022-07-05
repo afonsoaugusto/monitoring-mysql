@@ -13,12 +13,12 @@ logger = logging.getLogger()
 # set logging level from environment variable or default to INFO
 logger.setLevel(os.environ.get('LOG_LEVEL', logging.INFO))
 
-failures = Counter('failures', 'Counter of failures')
-exceptions = Counter('exceptions', 'Counter of exceptions')
+failures = Counter('monitor_failures', 'Counter of failures')
+exceptions = Counter('monitor_exceptions', 'Counter of exceptions')
 
 
 # Create a metric to track time spent and requests made.
-REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request')
+REQUEST_TIME = Summary('monitor_request_processing_seconds', 'Time spent processing request')
 
 # Decorate function with metric.
 @REQUEST_TIME.time()
@@ -29,6 +29,7 @@ def process_request(failures: Counter,exceptions: Counter, logger : logging.Logg
                                               database=os.environ.get('DB_NAME', 'monitoring'),
                                               user=os.environ.get('DB_USER', 'root'),
                                               password=os.environ.get('DB_PASSWORD', 'root'),
+                                              use_pure=True,
                                               connect_timeout=5000)
 
         if connection.is_connected():
@@ -63,6 +64,9 @@ if __name__ == '__main__':
     logging.getLogger().addHandler(format_handler)
     # Start up the server to expose the metrics.
     start_http_server(8000)
+    
+    os.environ['LIBMYSQL_ENABLE_CLEARTEXT_PLUGIN'] = '1'
+    
     # Generate some requests.
     
     while True:
