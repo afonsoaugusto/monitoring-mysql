@@ -105,24 +105,24 @@ services:
     labels:
       org.label-schema.group: "monitoring"
 
-  # mysql:
-  #   image: mysql:5.6
-  #   volumes:
-  #     - mysql_data:/var/lib/mysql
-  #     - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-  #     - ./log:/var/log
-  #   networks:
-  #     - monitor-net
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-  #     - MYSQL_DATABASE=monitoring
-  #     - MYSQL_USER=exporter
-  #     - MYSQL_PASSWORD=exporter
-  #     - MYSQL_ROOT_HOST=%
-  #   ports:
-  #     - "3306:3306"
-  #   labels:
-  #     org.label-schema.group: "mysql"
+  mysql:
+    image: mysql:8
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./log:/var/log
+    networks:
+      - monitor-net
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=monitoring
+      - MYSQL_USER=exporter
+      - MYSQL_PASSWORD=exporter
+      - MYSQL_ROOT_HOST=%
+    ports:
+      - "3306:3306"
+    labels:
+      org.label-schema.group: "mysql"
 
   mysqld-exporter:
     image: prom/mysqld-exporter:main
@@ -135,8 +135,8 @@ services:
     restart: always
     environment:
       - DATA_SOURCE_NAME=${DB_USER}:${DB_PASSWORD}@(${DB_HOST}:3306)/
-    # depends_on:
-    #   - mysql
+    depends_on:
+      - mysql
     labels:
       org.label-schema.group: "mysql"
 
@@ -154,7 +154,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=${DB_HOST}
       - DB_NAME=${DB_NAME}
-    # depends_on:
-    #   - mysql
+    depends_on:
+      - mysql
     labels:
       org.label-schema.group: "application"
